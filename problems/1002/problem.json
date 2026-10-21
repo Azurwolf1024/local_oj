@@ -1,0 +1,23 @@
+{
+  "id": "1002",
+  "title": "Area of a Circle",
+  "difficulty": "Easy",
+  "timeLimit": 1000,
+  "memoryLimit": 256,
+  "description": "Given the radius r of a circle as an integer, output its area.\n\nThe area is pi * r^2 where pi = 3.141592653589793... Your answer is accepted if it is within 1e-4 of the true value, so you may print any reasonable number of decimal digits. This problem uses a Special Judge (SPJ) because many different numeric outputs are all correct.",
+  "input": "A single integer r (1 <= r <= 10000) — the radius.",
+  "output": "A single real number — the area of the circle. Any answer within 1e-4 of the exact value is accepted.",
+  "note": "This problem is judged by a Special Judge (spj.cpp) that reads your output and checks |your_answer - pi*r^2| < 1e-4. Exact string matching is NOT used here.",
+  "samples": [
+    { "input": "1", "output": "3.1415926536" },
+    { "input": "2", "output": "12.5663706144" }
+  ],
+  "spj": { "lang": "cpp", "file": "spj.cpp" },
+  "tests": [
+    { "name": "#1", "in": "1.in", "out": "1.out" },
+    { "name": "#2", "in": "2.in", "out": "2.out" },
+    { "name": "#3", "in": "5.in", "out": "5.out" },
+    { "name": "#4", "in": "10.in", "out": "10.out" },
+    { "name": "#5", "in": "100.in", "out": "100.out" }
+  ]
+}

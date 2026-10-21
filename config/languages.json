@@ -1,0 +1,43 @@
+{
+  "default": {
+    "timeLimit": 1000,
+    "memoryLimit": 256,
+    "compare": {
+      "ignoreTrailingWhitespace": true,
+      "ignoreTrailingNewline": true,
+      "allowPresentationError": true
+    }
+  },
+  "languages": {
+    "cpp": {
+      "name": "C++",
+      "enabled": true,
+      "extensions": ["cpp", "cc", "cxx", "c++"],
+      "compile": {
+        "command": "g++",
+        "fallbacks": ["g++.exe", "mingw32-g++", "clang++"],
+        "args": ["-O2", "-std=c++17", "-static", "-o", "{out}", "{src}"],
+        "timeout": 30000
+      },
+      "run": {
+        "command": "{out}",
+        "args": [],
+        "timeLimitGrace": 500
+      },
+      "outExtension": ".exe"
+    },
+    "python": {
+      "name": "Python",
+      "enabled": true,
+      "extensions": ["py"],
+      "compile": null,
+      "run": {
+        "command": "python",
+        "fallbacks": ["python3", "py"],
+        "args": ["{src}"],
+        "timeLimitGrace": 1000
+      },
+      "outExtension": ""
+    }
+  }
+}

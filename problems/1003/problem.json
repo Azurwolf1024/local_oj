@@ -1,0 +1,23 @@
+{
+  "id": "1003",
+  "title": "Any Two Positive Numbers Summing to S",
+  "difficulty": "Easy",
+  "timeLimit": 1000,
+  "memoryLimit": 256,
+  "description": "Given an integer S (2 <= S <= 10000), output ANY two positive integers x and y (1 <= x, y <= S-1) on a single line such that x + y = S.\n\nBecause many different answers are correct (e.g. for S = 10 you may output '1 9', '2 8', ... or '9 1'), this problem is judged by a Special Judge rather than by exact string comparison.",
+  "input": "A single integer S (2 <= S <= 10000).",
+  "output": "Two positive integers x and y separated by a space, with x + y = S and 1 <= x, y <= S-1.",
+  "note": "Judged by spj.cpp: it checks x and y are positive, x < S, y < S, and x + y == S. Order does not matter.",
+  "samples": [
+    { "input": "10", "output": "1 9" },
+    { "input": "3", "output": "1 2" }
+  ],
+  "spj": { "lang": "cpp", "file": "spj.cpp" },
+  "tests": [
+    { "name": "#1", "in": "10.in", "out": "10.out" },
+    { "name": "#2", "in": "3.in", "out": "3.out" },
+    { "name": "#3", "in": "7.in", "out": "7.out" },
+    { "name": "#4", "in": "100.in", "out": "100.out" },
+    { "name": "#5", "in": "2.in", "out": "2.out" }
+  ]
+}

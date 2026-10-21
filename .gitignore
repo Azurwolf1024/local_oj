@@ -1,0 +1,16 @@
+# WorkBuddy project data (memory / runtime state — not source)
+.workbuddy/
+
+# runtime data (submissions contain user code, regenerated at runtime)
+data/
+
+# compiled special-judge artifacts (built on first run)
+*.exe
+*.o
+spj
+
+# dependencies (this project ships zero npm deps, guard anyway)
+node_modules/
+
+# logs
+*.log

@@ -1,0 +1,20 @@
+{
+  "judgeConcurrency": 1,
+  "maxSourceSizeKB": 256,
+  "tempDir": null,
+  "spj": {
+    "compileTimeout": 30000,
+    "runTimeLimit": 10000,
+    "argsConvention": true
+  },
+  "executables": {
+    "cpp": {
+      "compiler": null,
+      "fallbacks": ["g++", "g++.exe", "mingw32-g++", "clang++"]
+    },
+    "python": {
+      "interpreter": null,
+      "fallbacks": ["python", "python3", "py"]
+    }
+  }
+}
