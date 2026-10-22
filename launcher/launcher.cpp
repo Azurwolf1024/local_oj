@@ -2,7 +2,16 @@
  * Local OJ Launcher
  * -----------------
  * A tiny, dependency-free Windows tray application (Win32 API only) that:
- *   1. Locates node.exe (PATH / OJ_NODE env / common install dirs).
+ *   1. Locates node.exe:
+ *        - OJ_NODE environment variable
+ *        - local_oj.json config file (in the launcher's directory)
+ *        - PATH search
+ *        - WorkBuddy-managed node: %USERPROFILE%\.workbuddy\binaries\node\versions\<ver>\node.exe
+ *        - nvm:                  %USERPROFILE%\AppData\Roaming\nvm\<ver>\node.exe
+ *                                 %USERPROFILE%\.nvm\<ver>\node.exe
+ *        - common install dirs:  C:\Program Files\nodejs\node.exe  (x86 too)
+ *      If nothing is found, a file-picker dialog lets the user choose node.exe
+ *      once; the choice is saved to local_oj.json for next time.
  *   2. Launches `node server.js` from the launcher's own directory as a
  *      hidden background process, placed inside a Job Object so the whole
  *      process tree is killed on exit.
@@ -14,6 +23,7 @@
  */
 #include <windows.h>
 #include <shellapi.h>
+#include <commdlg.h>
 #include <tlhelp32.h>
 #include <string>
 #include <vector>
@@ -36,6 +46,11 @@ static int       g_port     = 8080;
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+static bool FileExists(const wchar_t* p) {
+    DWORD a = GetFileAttributesW(p);
+    return a != INVALID_FILE_ATTRIBUTES && !(a & FILE_ATTRIBUTE_DIRECTORY);
+}
+
 static std::wstring GetExeDir() {
     wchar_t buf[MAX_PATH] = { 0 };
     GetModuleFileNameW(NULL, buf, MAX_PATH);
@@ -54,36 +69,150 @@ static int GetPort() {
     return 8080;
 }
 
+// Read the optional "node" path from local_oj.json (in the exe directory).
+static std::wstring ReadConfigNode() {
+    std::wstring path = GetExeDir() + L"\\local_oj.json";
+    HANDLE h = CreateFileW(path.c_str(), GENERIC_READ, FILE_SHARE_READ, NULL,
+                           OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (h == INVALID_HANDLE_VALUE) return L"";
+    DWORD sz = GetFileSize(h, NULL);
+    std::string buf;
+    if (sz > 0 && sz < 65536) {
+        buf.resize(sz);
+        DWORD rd = 0;
+        ReadFile(h, &buf[0], sz, &rd, NULL);
+    }
+    CloseHandle(h);
+    if (buf.empty()) return L"";
+    int wlen = MultiByteToWideChar(CP_UTF8, 0, buf.data(), (int)buf.size(), NULL, 0);
+    if (wlen <= 0) return L"";
+    std::wstring w(wlen, L'\0');
+    MultiByteToWideChar(CP_UTF8, 0, buf.data(), (int)buf.size(), &w[0], wlen);
+    // naive extraction of  "node" : "...."
+    std::wstring key = L"\"node\"";
+    size_t p = w.find(key);
+    if (p == std::wstring::npos) return L"";
+    p = w.find(L'"', p + key.size());
+    if (p == std::wstring::npos) return L"";
+    p++;
+    size_t q = w.find(L'"', p);
+    if (q == std::wstring::npos) return L"";
+    std::wstring val = w.substr(p, q - p);
+    std::wstring out;
+    for (size_t i = 0; i < val.size(); ++i) {
+        if (val[i] == L'\\' && i + 1 < val.size()) { out += val[i + 1]; ++i; }
+        else out += val[i];
+    }
+    return out;
+}
+
+// Persist the chosen node path into local_oj.json for next launch.
+static void WriteConfigNode(const std::wstring& nodePath) {
+    std::wstring path = GetExeDir() + L"\\local_oj.json";
+    std::wstring content = L"{\n  \"node\": \"";
+    for (wchar_t c : nodePath) {
+        if (c == L'\\') content += L"\\\\";
+        else content += c;
+    }
+    content += L"\"\n}\n";
+    int len = WideCharToMultiByte(CP_UTF8, 0, content.c_str(), (int)content.size(),
+                                  NULL, 0, NULL, NULL);
+    if (len <= 0) return;
+    std::string buf(len, '\0');
+    WideCharToMultiByte(CP_UTF8, 0, content.c_str(), (int)content.size(),
+                        &buf[0], len, NULL, NULL);
+    HANDLE h = CreateFileW(path.c_str(), GENERIC_WRITE, 0, NULL, CREATE_ALWAYS,
+                           FILE_ATTRIBUTE_NORMAL, NULL);
+    if (h != INVALID_HANDLE_VALUE) {
+        DWORD wr = 0;
+        WriteFile(h, buf.data(), (DWORD)buf.size(), &wr, NULL);
+        CloseHandle(h);
+    }
+}
+
+// Look for <dir>\<version-subfolder>\node.exe and return the first match.
+static std::wstring FindNodeInVersionDir(const std::wstring& dir) {
+    std::wstring search = dir + L"\\*";
+    WIN32_FIND_DATAW fd;
+    HANDLE h = FindFirstFileW(search.c_str(), &fd);
+    if (h == INVALID_HANDLE_VALUE) return L"";
+    std::wstring found;
+    do {
+        if (!(fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) continue;
+        if (wcscmp(fd.cFileName, L".") == 0 || wcscmp(fd.cFileName, L"..") == 0) continue;
+        std::wstring cand = dir + L"\\" + fd.cFileName + L"\\node.exe";
+        if (FileExists(cand.c_str())) { found = cand; break; }
+    } while (FindNextFileW(h, &fd));
+    FindClose(h);
+    return found;
+}
+
 static std::wstring FindNode() {
     // 1. explicit env override
     wchar_t env[1024] = { 0 };
     if (GetEnvironmentVariableW(L"OJ_NODE", env, 1024) > 0) {
-        if (GetFileAttributesW(env) != INVALID_FILE_ATTRIBUTES) return env;
+        if (FileExists(env)) return env;
     }
-    // 2. PATH search for node.exe
+    // 2. local_oj.json config (in the launcher's directory)
+    std::wstring cfg = ReadConfigNode();
+    if (!cfg.empty() && FileExists(cfg.c_str())) return cfg;
+    // 3. PATH search for node.exe
     wchar_t pathEnv[32767] = { 0 };
     if (GetEnvironmentVariableW(L"PATH", pathEnv, 32767) > 0) {
         std::wstring pathStr(pathEnv);
         size_t start = 0;
         while (start < pathStr.size()) {
             size_t end = pathStr.find_first_of(L";", start);
-            std::wstring dir = pathStr.substr(start, end - start);
-            if (!dir.empty() && dir.back() != L'\\') dir += L"\\";
-            dir += L"node.exe";
-            if (GetFileAttributesW(dir.c_str()) != INVALID_FILE_ATTRIBUTES) return dir;
+            std::wstring d = pathStr.substr(start, end - start);
+            if (!d.empty() && d.back() != L'\\') d += L"\\";
+            d += L"node.exe";
+            if (FileExists(d.c_str())) return d;
             if (end == std::wstring::npos) break;
             start = end + 1;
         }
     }
-    // 3. common install locations
+    // 4. WorkBuddy-managed node
+    wchar_t prof[1024] = { 0 };
+    if (GetEnvironmentVariableW(L"USERPROFILE", prof, 1024) > 0) {
+        std::wstring wb = std::wstring(prof) +
+            L"\\.workbuddy\\binaries\\node\\versions";
+        std::wstring found = FindNodeInVersionDir(wb);
+        if (!found.empty()) return found;
+    }
+    // 5. nvm (common install locations)
+    if (GetEnvironmentVariableW(L"USERPROFILE", prof, 1024) > 0) {
+        std::wstring nvm1 = std::wstring(prof) + L"\\AppData\\Roaming\\nvm";
+        std::wstring found = FindNodeInVersionDir(nvm1);
+        if (!found.empty()) return found;
+        std::wstring nvm2 = std::wstring(prof) + L"\\.nvm";
+        found = FindNodeInVersionDir(nvm2);
+        if (!found.empty()) return found;
+    }
+    // 6. fixed common install locations
     const wchar_t* common[] = {
         L"C:\\Program Files\\nodejs\\node.exe",
         L"C:\\Program Files (x86)\\nodejs\\node.exe",
         NULL
     };
     for (int i = 0; common[i]; ++i) {
-        if (GetFileAttributesW(common[i]) != INVALID_FILE_ATTRIBUTES) return common[i];
+        if (FileExists(common[i])) return common[i];
     }
+    return L"";
+}
+
+// Let the user pick node.exe manually (used when auto-detection fails).
+static std::wstring PickNode(HWND owner) {
+    wchar_t buf[MAX_PATH] = { 0 };
+    OPENFILENAMEW ofn = { 0 };
+    ofn.lStructSize = sizeof(ofn);
+    ofn.hwndOwner   = owner;
+    ofn.lpstrFilter = L"Node.js 可执行文件 (*.exe)\0node.exe\0所有文件 (*.*)\0*.*\0\0";
+    ofn.lpstrFile   = buf;
+    ofn.nMaxFile    = MAX_PATH;
+    ofn.Flags       = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_EXPLORER;
+    ofn.lpstrTitle  = L"请选择 node.exe（Node.js 可执行文件）";
+    ofn.nFilterIndex = 1;
+    if (GetOpenFileNameW(&ofn)) return std::wstring(buf);
     return L"";
 }
 
@@ -295,19 +424,30 @@ int WINAPI WinMain(HINSTANCE hinst, HINSTANCE, LPSTR, int) {
     std::wstring dir  = GetExeDir();
     std::wstring node = FindNode();
     if (node.empty()) {
-        MessageBoxW(NULL,
-                    L"未找到 node.exe。\n请先安装 Node.js，或在环境变量 OJ_NODE 中指定其完整路径。",
-                    L"Local OJ", MB_OK | MB_ICONERROR);
-        return 1;
+        // Auto-detection failed: ask the user to point at node.exe once.
+        int ans = MessageBoxW(NULL,
+            L"未能自动找到 node.exe。\nNode.js 是运行本服务的必备环境。\n\n"
+            L"点击「确定」在弹出的对话框中选择 node.exe（选择后会自动记住）；\n"
+            L"点击「取消」退出。",
+            L"Local OJ", MB_OKCANCEL | MB_ICONINFORMATION);
+        if (ans != IDOK) return 0;
+        node = PickNode(g_hwnd);
+        if (node.empty()) {
+            MessageBoxW(NULL, L"未选择 node.exe，启动已取消。",
+                        L"Local OJ", MB_OK | MB_ICONERROR);
+            return 0;
+        }
+        WriteConfigNode(node);
     }
 
     if (PortInUse()) {
         g_external = true;
         ShowBalloon(L"Local OJ 已在运行",
-                    L"检测到 8080 端口已有服务。点击「打开网页」即可访问。");
+                    L"检测到端口已有服务。点击「打开网页」即可访问。");
     } else {
         if (!LaunchServer(node, dir)) {
-            MessageBoxW(NULL, L"无法启动 node 服务，请检查 server.js 是否存在。",
+            MessageBoxW(NULL,
+                        L"无法启动 node 服务，请确认 server.js 与本启动器位于同一目录。",
                         L"Local OJ", MB_OK | MB_ICONERROR);
             return 1;
         }

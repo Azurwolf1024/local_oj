@@ -22,7 +22,7 @@ echo [3/3] Linking standalone EXE (static, no console)...
 %GCC% -O2 -mwindows -static -static-libgcc -static-libstdc++ ^
   launcher.cpp launcher_res.o ^
   -o ..\local_oj_launcher.exe ^
-  -lws2_32 -lshell32 -luser32 -lgdi32 -lkernel32
+  -lws2_32 -lshell32 -luser32 -lgdi32 -lkernel32 -lcomdlg32
 if errorlevel 1 exit /b 1
 
 echo.

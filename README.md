@@ -296,7 +296,7 @@ local_oj/
 
 不想开命令行？项目根目录提供了 **`local_oj_launcher.exe`**——一个零依赖的 Windows 托盘小程序，双击即可：
 
-1. 自动定位 `node.exe`（依次查找 `OJ_NODE` 环境变量 → `PATH` → 常见安装目录）；
+1. 自动定位 `node.exe`（查找顺序见下）；找不到时会**弹窗让你手动选择 node.exe**，选择结果自动记到 `local_oj.json`，下次免选；
 2. 在**后台**启动 `node server.js`（进程树被 Job / 进程树终止逻辑管理）；
 3. 在系统托盘显示图标，**右键（或左键）点击**弹出菜单：
    - **打开网页**：用默认浏览器打开 `http://localhost:<端口>/`；
@@ -304,12 +304,26 @@ local_oj/
 
 > 启动器会从**自身所在目录**查找 `server.js`，请把它放在项目根目录（与 `server.js` 同级）。
 
-### 配置环境变量（可选）
+### node.exe 的查找顺序
 
-| 变量 | 作用 | 默认 |
+启动器按以下顺序定位 `node.exe`，命中即止：
+
+1. 环境变量 `OJ_NODE`（显式完整路径）；
+2. 启动器同目录下的 `local_oj.json` 配置文件中的 `node` 字段（手动选择后自动写入）；
+3. 系统 `PATH` 中的 `node.exe`；
+4. **WorkBuddy 托管 Node**：`%USERPROFILE%\.workbuddy\binaries\node\versions\<版本>\node.exe`；
+5. **nvm**：`%USERPROFILE%\AppData\Roaming\nvm\<版本>\node.exe` 与 `%USERPROFILE%\.nvm\<版本>\node.exe`；
+6. 常见安装目录：`C:\Program Files\nodejs\node.exe`、`C:\Program Files (x86)\nodejs\node.exe`。
+
+> 如果你是 WorkBuddy 环境或用了 nvm，启动器现在能**自动识别**，无需手动设置。
+
+### 配置（可选）
+
+| 变量 / 文件 | 作用 | 默认 |
 | --- | --- | --- |
-| `OJ_NODE` | 显式指定 `node.exe` 的完整路径（找不到 node 时使用） | 自动查找 |
+| `OJ_NODE` | 显式指定 `node.exe` 的完整路径 | 自动查找 |
 | `OJ_PORT` | 服务端口 | `8080` |
+| `local_oj.json` | 自动生成；也可手写 `{ "node": "C:\\path\\to\\node.exe" }` | — |
 
 例如：`OJ_PORT=9000 local_oj_launcher.exe`。
 
