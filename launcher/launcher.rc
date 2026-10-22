@@ -1,0 +1,3 @@
+// Resource file for the Local OJ launcher.
+// Icon id 101 is referenced from launcher.cpp via MAKEINTRESOURCE(101).
+101 ICON "app.ico"

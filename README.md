@@ -285,7 +285,47 @@ local_oj/
 │   └── zip.js                # 零依赖 ZIP 解析（stored/deflate）
 ├── problems/                 # 题目数据（1001~1003 为内置示例）
 ├── public/                   # 前端（index.html / app.js / styles.css）
+├── launcher/                 # 一键启动托盘小程序的源码与构建脚本
+├── local_oj_launcher.exe     # 编译产物：双击即启动并驻留托盘
 └── data/submissions/         # 提交记录（运行时生成，已被 .gitignore 忽略）
+```
+
+---
+
+## 一键启动（桌面托盘启动器）
+
+不想开命令行？项目根目录提供了 **`local_oj_launcher.exe`**——一个零依赖的 Windows 托盘小程序，双击即可：
+
+1. 自动定位 `node.exe`（依次查找 `OJ_NODE` 环境变量 → `PATH` → 常见安装目录）；
+2. 在**后台**启动 `node server.js`（进程树被 Job / 进程树终止逻辑管理）；
+3. 在系统托盘显示图标，**右键（或左键）点击**弹出菜单：
+   - **打开网页**：用默认浏览器打开 `http://localhost:<端口>/`；
+   - **退出服务**：终止 node 及全部子进程并退出。
+
+> 启动器会从**自身所在目录**查找 `server.js`，请把它放在项目根目录（与 `server.js` 同级）。
+
+### 配置环境变量（可选）
+
+| 变量 | 作用 | 默认 |
+| --- | --- | --- |
+| `OJ_NODE` | 显式指定 `node.exe` 的完整路径（找不到 node 时使用） | 自动查找 |
+| `OJ_PORT` | 服务端口 | `8080` |
+
+例如：`OJ_PORT=9000 local_oj_launcher.exe`。
+
+若 `8080` 端口已被占用（已有服务在跑），启动器会检测到并提示"已在运行"，仅提供"打开网页"，不会重复拉起。
+
+### 自行重新编译
+
+源码在 `launcher/`，需要 MinGW-w64 的 `g++` 与 `windres`（Windows 下直接双击 `launcher/build.bat`；Git Bash / MSYS2 下运行 `bash launcher/build.sh`）。产物输出到项目根目录的 `local_oj_launcher.exe`。
+
+```
+launcher/
+├── launcher.cpp   # 托盘 + node 拉起 + 进程树回收
+├── launcher.rc    # 图标资源
+├── make_icon.py   # 生成 app.ico（蓝底白环）
+├── build.bat      # Windows 构建脚本
+└── build.sh       # Git Bash / MSYS2 构建脚本
 ```
 
 ---
