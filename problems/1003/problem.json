@@ -9,15 +9,44 @@
   "output": "Two positive integers x and y separated by a space, with x + y = S and 1 <= x, y <= S-1.",
   "note": "Judged by spj.cpp: it checks x and y are positive, x < S, y < S, and x + y == S. Order does not matter.",
   "samples": [
-    { "input": "10", "output": "1 9" },
-    { "input": "3", "output": "1 2" }
+    {
+      "input": "10",
+      "output": "1 9"
+    },
+    {
+      "input": "3",
+      "output": "1 2"
+    }
   ],
-  "spj": { "lang": "cpp", "file": "spj.cpp" },
+  "spj": {
+    "lang": "cpp",
+    "file": "spj.cpp"
+  },
   "tests": [
-    { "name": "#1", "in": "10.in", "out": "10.out" },
-    { "name": "#2", "in": "3.in", "out": "3.out" },
-    { "name": "#3", "in": "7.in", "out": "7.out" },
-    { "name": "#4", "in": "100.in", "out": "100.out" },
-    { "name": "#5", "in": "2.in", "out": "2.out" }
+    {
+      "name": "#1",
+      "in": "10.in",
+      "out": "10.out"
+    },
+    {
+      "name": "#2",
+      "in": "3.in",
+      "out": "3.out"
+    },
+    {
+      "name": "#3",
+      "in": "7.in",
+      "out": "7.out"
+    },
+    {
+      "name": "#4",
+      "in": "100.in",
+      "out": "100.out"
+    },
+    {
+      "name": "#5",
+      "in": "2.in",
+      "out": "2.out"
+    }
   ]
 }

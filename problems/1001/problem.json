@@ -9,16 +9,46 @@
   "output": "Output a single integer: the value of a + b.",
   "note": "Your output may contain extra trailing spaces or a trailing newline — the judge compares values after stripping trailing whitespace and trailing blank lines.",
   "samples": [
-    { "input": "1 2", "output": "3" },
-    { "input": "100 200", "output": "300" }
+    {
+      "input": "1 2",
+      "output": "3"
+    },
+    {
+      "input": "100 200",
+      "output": "300"
+    }
   ],
   "spj": null,
   "tests": [
-    { "name": "#1", "in": "1.in", "out": "1.out" },
-    { "name": "#2", "in": "2.in", "out": "2.out" },
-    { "name": "#3", "in": "3.in", "out": "3.out" },
-    { "name": "#4", "in": "4.in", "out": "4.out" },
-    { "name": "#5", "in": "5.in", "out": "5.out" },
-    { "name": "#6", "in": "6.in", "out": "6.out" }
+    {
+      "name": "#1",
+      "in": "1.in",
+      "out": "1.out"
+    },
+    {
+      "name": "#2",
+      "in": "2.in",
+      "out": "2.out"
+    },
+    {
+      "name": "#3",
+      "in": "3.in",
+      "out": "3.out"
+    },
+    {
+      "name": "#4",
+      "in": "4.in",
+      "out": "4.out"
+    },
+    {
+      "name": "#5",
+      "in": "5.in",
+      "out": "5.out"
+    },
+    {
+      "name": "#6",
+      "in": "6.in",
+      "out": "6.out"
+    }
   ]
 }
